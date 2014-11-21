@@ -30,7 +30,7 @@ These functions have been tested on a Windows 8.1 machine:
   
 
 
-I've only tested this with apache that comes with XAMPP but I'm not expecting any mayor changes for other A.M.P. packages
+I've only tested this with apache that comes with XAMPP but I'm not expecting any mayor changes for other Apache MySQL and PHP packages
 
 ### License
 This module and it's additional files are distributed under the GNU General Public License v3.
