@@ -34,6 +34,14 @@ Set-Variable -Scope Script -Name VHOSTSFILE -Value 'conf\extra\httpd-vhosts.conf
 # Current Script version Constant 
 Set-Variable -Scope Script -Name MODULE_VERSION -Value '0.2' -Option Constant
 
+# The name of the apache service
+Set-Variable -Scope Script -Name APACHE_SERVICE -Value 'Apache2.4' -Option Constant
+
+Set-Variable -Scope Script -Name SERVICE_RUNNING -Value 'Running' -Option Constant
+Set-Variable -Scope Script -Name SERVICE_STOPPED -Value 'Stopped' -Option Constant
+Set-Variable -Scope Script -Name SERVICE_STARTING -Value 'Starting' -Option Constant
+
+
 #region Test functions
 <#
     This function tests if the current session is running elevated
@@ -57,6 +65,14 @@ Function Test-Elevated{
         return [bool] $principal.IsInRole($AdminRole);   
     }
 }
+
+Function Test-ApacheService{
+    Begin{    
+        return [bool] ( (Get-Service -Name (Get-Variable -Name APACHE_SERVICE).Value).Status -eq (Get-Variable -Name SERVICE_RUNNING).Value )   
+    }
+}
+
+
 
 Function Test-ApacheVhostsFile {    
      [CmdLetBinding()]
@@ -500,6 +516,10 @@ Function Get-ApacheVirtualHost{
 
                         # Added apachedirectory so it can be reused in a pipeline
                         $VirtualHost | Add-Member @Member -Name "ApacheDirectory" -Value $ApacheDirectory
+
+                        # Add the custom log property, this way the property is there even when the custom log is not defined
+                        # I added this to keep the object consistent
+                        $VirtualHost | Add-Member @Member -Name "CustomLog" -Value ''
                     }
 
                     if ( $currentLine.StartsWith('ServerAdmin') ) {
@@ -535,7 +555,9 @@ Function Get-ApacheVirtualHost{
                     }
                     
                     if ($currentLine.StartsWith('CustomLog' )){                        
-                        $VirtualHost | Add-Member @Member -Name "CustomLog" -Value $currentLine.Substring('CustomLog'.Length).Trim() #.Replace('"', "")
+                        
+                        $VirtualHost.CustomLog = "$($currentLine.Substring('CustomLog'.Length).Trim())" #.Replace('"', "")
+                        #$VirtualHost | Add-Member @Member -Name "CustomLog" -Value $currentLine.Substring('CustomLog'.Length).Trim() #.Replace('"', "")
                     }
 
                     if ( $currentLine.StartsWith('<Directory') ){    
@@ -708,9 +730,10 @@ Function New-ApacheVirtualHost{
             $InputObject | Format-List -Property *
 
             Write-Debug "ApacheDir pipeline: $($InputObject.ApacheDirectory)"
+            Write-Debug "ServerName pipeline: $($InputObject.ServerName)"
 
             $ApacheDirectory = $InputObject.ApacheDirectory
-            $ServerName = $InputObject.ServerName
+            $Name = $InputObject.ServerName
             $ServerAdmin = $InputObject.ServerAdmin
             $DocumentRoot = $InputObject.DocumentRoot
             $ServerAlias = $InputObject.ServerAlias
@@ -776,7 +799,12 @@ Function New-ApacheVirtualHost{
 
         if ( ! ( [String]::IsNullOrEmpty($CustomLog) ) ) {
             
-             $VirtualHostText += "`tCustomLog $CustomLog comonvhost`n"
+            if ( ! ( $CustomLog.EndsWith('comonvhost') ) ){
+                $VirtualHostText += "`tCustomLog $CustomLog comonvhost`n"
+             }
+             else{
+                $VirtualHostText += "`tCustomLog $CustomLog`n"
+             }
 #            $VirtualHostText += "`tCustomLog `"$CustomLog`"`n"
         }
 
@@ -957,4 +985,4 @@ Function Remove-ApacheVirtualHost{
 #endregion
 
 # Export the functions
-Export-ModuleMember -Function Get-ApacheVirtualHost, New-ApacheVirtualHost, Remove-ApacheVirtualHost,Get-WindowsHost, New-WindowsHost, Remove-WindowsHost, Test-ApacheDirectory, Test-ApacheVhostsFile, Test-Elevated
+Export-ModuleMember -Function Get-ApacheVirtualHost, New-ApacheVirtualHost, Remove-ApacheVirtualHost,Get-WindowsHost, New-WindowsHost, Remove-WindowsHost, Test-ApacheDirectory, Test-ApacheVhostsFile, Test-Elevated, Test-ApacheService
