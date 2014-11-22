@@ -1,4 +1,4 @@
-#  Powerhell Apache Module #
+#  Powershell Apache Module #
 This is my first attempt in creating a powershell module.
 I moved from VBS and JScript for my automation scripts to Powershell recently so please go easy on me;
 
