@@ -22,6 +22,8 @@
    Date: 19/11/2014
 #>
 
+#region Constants 
+
 # Declare a constant for the windows hosts file path
 Set-Variable -Scope Script -Name HOSTFILE -Value 'C:\WINDOWS\system32\drivers\etc\hosts' -Option Constant
 
@@ -38,9 +40,12 @@ Set-Variable -Scope Script -Name MODULE_VERSION -Value '0.2' -Option Constant
 Set-Variable -Scope Script -Name APACHE_SERVICE -Value 'Apache2.4' -Option Constant
 
 Set-Variable -Scope Script -Name SERVICE_RUNNING -Value 'Running' -Option Constant
+
 Set-Variable -Scope Script -Name SERVICE_STOPPED -Value 'Stopped' -Option Constant
+
 Set-Variable -Scope Script -Name SERVICE_STARTING -Value 'Starting' -Option Constant
 
+#endregion Constants
 
 #region Test functions
 <#
@@ -50,7 +55,8 @@ Function Test-Elevated{
     <#
 
     .SYNOPSIS 
-     Checks if the current session is running with elevated rights
+     Checks if the current session is running with ele
+     vated rights
 
     .DESCRIPTION
      This function will return a boolean value depending on the elevated state of the current session
@@ -66,20 +72,105 @@ Function Test-Elevated{
     }
 }
 
+<# 
+     Checks if the apache service is available/installed
+
+#>
 Function Test-ApacheService{
     Begin{    
 
        [String] $ServiceName = (Get-Variable -Name APACHE_SERVICE).Value
 
-        if (Get-Service "$ServiceName" -ErrorAction SilentlyContinue)
-        {
-        
-        }
-        return [bool] ( (Get-Service -Name (Get-Variable -Name APACHE_SERVICE).Value).Status -eq (Get-Variable -Name SERVICE_RUNNING).Value )   
+        return [bool] (Get-Service "$ServiceName" -ErrorAction SilentlyContinue)  
     }
 }
 
 
+Function Restart-ApacheService{
+    
+    Begin {
+
+        # get the service name from the constant
+        [String] $ServiceName = (Get-Variable -Name APACHE_SERVICE).Value
+    
+        # make sure the service exists
+        if ( Test-ApacheService ){
+        
+            # get an object ref to the service controller
+            [System.ServiceProcess.ServiceController] $Sc = Get-Service -Name "$ServiceName" 
+
+            # make sure the service is running
+            if ( $Sc.Status -eq (Get-Variable -Name SERVICE_RUNNING).Value ){
+                
+                # stop the service
+                $Sc.Stop();
+   
+                # Wait for the service to have stopped
+                 do{
+                    # Refresh the Service Controller
+                    $Sc.Refresh();
+                    # Wait for 250 ms
+                    Start-Sleep -Milliseconds 250
+                    # Write debug info
+                    Write-Debug "Service Status: $($Sc.Status)"
+                
+                } while ( $sc.Status -ne (Get-Variable -Name SERVICE_STOPPED).Value )
+
+                #start the service
+                $Sc.Start(); 
+
+                               
+                # Wait for the service to have the status 'Running'
+                do{
+                    # Refresh the Service Controller
+                    $Sc.Refresh();
+                    # Wait for 250 ms
+                    Start-Sleep -Milliseconds 250
+                    # Write debug info
+                    Write-Debug "Service Status: $($Sc.Status)"
+                
+                } while ( $sc.Status -ne (Get-Variable -Name SERVICE_RUNNING).Value )
+
+                # Dispose the Service Controller
+                $Sc.Dispose();
+
+                # Set the reference to NULL
+                $Sc = $null
+            }
+            else {
+                
+                Write-Host "The apache service is not running"
+            
+            }
+            
+        
+        }
+        else
+        {
+            Throw "Apache Service Not available"
+        }
+
+    
+    }
+
+
+
+}
+
+Function Get-ApacheService{
+
+    Begin {
+    
+        if ( Test-ApacheService ){
+
+
+            return [bool] ( (Get-Service -Name (Get-Variable -Name APACHE_SERVICE).Value).Status -eq (Get-Variable -Name SERVICE_RUNNING).Value ) 
+    
+        }
+
+    }
+
+}
 
 Function Start-ApacheService{
 
@@ -1006,4 +1097,4 @@ Function Remove-ApacheVirtualHost{
 #endregion
 
 # Export the functions
-Export-ModuleMember -Function Get-ApacheVirtualHost, New-ApacheVirtualHost, Remove-ApacheVirtualHost,Get-WindowsHost, New-WindowsHost, Remove-WindowsHost, Test-ApacheDirectory, Test-ApacheVhostsFile, Test-Elevated, Test-ApacheService
+Export-ModuleMember -Function Get-ApacheVirtualHost, New-ApacheVirtualHost, Remove-ApacheVirtualHost,Get-WindowsHost, New-WindowsHost, Remove-WindowsHost, Test-ApacheDirectory, Test-ApacheVhostsFile, Test-Elevated, Test-ApacheService, Restart-ApacheService
