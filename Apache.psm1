@@ -68,11 +68,32 @@ Function Test-Elevated{
 
 Function Test-ApacheService{
     Begin{    
+
+       [String] $ServiceName = (Get-Variable -Name APACHE_SERVICE).Value
+
+        if (Get-Service "$ServiceName" -ErrorAction SilentlyContinue)
+        {
+        
+        }
         return [bool] ( (Get-Service -Name (Get-Variable -Name APACHE_SERVICE).Value).Status -eq (Get-Variable -Name SERVICE_RUNNING).Value )   
     }
 }
 
 
+
+Function Start-ApacheService{
+
+    Begin {
+        
+        if ( ! ( Test-ApacheService ) ) {
+        
+            
+        
+        }
+    
+    }
+
+}
 
 Function Test-ApacheVhostsFile {    
      [CmdLetBinding()]
