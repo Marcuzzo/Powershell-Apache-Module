@@ -72,146 +72,6 @@ Function Test-Elevated{
     }
 }
 
-<# 
-     Checks if the apache service is available/installed
-
-#>
-Function Test-ApacheService{
-    Begin{    
-
-       [String] $ServiceName = (Get-Variable -Name APACHE_SERVICE).Value
-
-        return [bool] (Get-Service "$ServiceName" -ErrorAction SilentlyContinue)  
-    }
-}
-
-
-Function Restart-ApacheService{
-    
-    Begin {
-
-        # get the service name from the constant
-        [String] $ServiceName = (Get-Variable -Name APACHE_SERVICE).Value
-    
-        # make sure the service exists
-        if ( Test-ApacheService ){
-        
-            # get an object ref to the service controller
-            [System.ServiceProcess.ServiceController] $Sc = Get-Service -Name "$ServiceName" 
-
-            # make sure the service is running
-            if ( $Sc.Status -eq (Get-Variable -Name SERVICE_RUNNING).Value ){
-                
-                # stop the service
-                $Sc.Stop();
-   
-                # Wait for the service to have stopped
-                 do{
-                    # Refresh the Service Controller
-                    $Sc.Refresh();
-                    # Wait for 250 ms
-                    Start-Sleep -Milliseconds 250
-                    # Write debug info
-                    Write-Debug "Service Status: $($Sc.Status)"
-                
-                } while ( $sc.Status -ne (Get-Variable -Name SERVICE_STOPPED).Value )
-
-                #start the service
-                $Sc.Start(); 
-
-                               
-                # Wait for the service to have the status 'Running'
-                do{
-                    # Refresh the Service Controller
-                    $Sc.Refresh();
-                    # Wait for 250 ms
-                    Start-Sleep -Milliseconds 250
-                    # Write debug info
-                    Write-Debug "Service Status: $($Sc.Status)"
-                
-                } while ( $sc.Status -ne (Get-Variable -Name SERVICE_RUNNING).Value )
-
-                # Dispose the Service Controller
-                $Sc.Dispose();
-
-                # Set the reference to NULL
-                $Sc = $null
-            }
-            else {
-                
-                Write-Host "The apache service is not running"
-            
-            }
-            
-        
-        }
-        else
-        {
-            Throw "Apache Service Not available"
-        }
-
-    
-    }
-
-
-
-}
-
-Function Get-ApacheService{
-
-    Begin {
-    
-        if ( Test-ApacheService ){
-
-
-            return [bool] ( (Get-Service -Name (Get-Variable -Name APACHE_SERVICE).Value).Status -eq (Get-Variable -Name SERVICE_RUNNING).Value ) 
-    
-        }
-
-    }
-
-}
-
-Function Start-ApacheService{
-
-    Begin {
-        
-        if ( ! ( Test-ApacheService ) ) {
-        
-            
-        
-        }
-    
-    }
-
-}
-
-Function Test-ApacheVhostsFile {    
-     [CmdLetBinding()]
-    param(
-        [Parameter(Mandatory = $true )]
-        [Alias("ApacheDirectory")]
-        [String] $Path
-    )
-    Begin {    
-        # Get the vhosts subdirectory from the constant
-        [String] $vhostsFile = ( Get-Variable -Name VHOSTSFILE -Scope Script ).Value        
-        Write-Output ( Test-Path -Path "$($Path)\$($vhostsFile)")
-    }
-}
-
-Function Test-ApacheDirectory{
-    [CmdLetBinding()]
-    param(
-        [Parameter(Mandatory = $true )]
-        [Alias("ApacheDirectory")]
-        [String] $Path
-    )
-    Begin {    
-        Write-Output ( Test-Path -Path $Path)    
-    }
-}
-
 #endregion
 
 #region Windows Host 
@@ -518,6 +378,118 @@ Function Remove-WindowsHost{
 #endregion
 
 #region Apache Virtual Host
+
+
+<# 
+     Checks if the apache service is available/installed
+
+#>
+Function Test-ApacheService{
+    Begin{    
+
+       [String] $ServiceName = (Get-Variable -Name APACHE_SERVICE).Value
+
+        return [bool] (Get-Service "$ServiceName" -ErrorAction SilentlyContinue)  
+    }
+}
+
+
+Function Restart-ApacheService{
+    
+    Begin {
+
+        # get the service name from the constant
+        [String] $ServiceName = (Get-Variable -Name APACHE_SERVICE).Value
+    
+        # make sure the service exists
+        if ( Test-ApacheService ){
+        
+            # get an object ref to the service controller
+            [System.ServiceProcess.ServiceController] $Sc = Get-Service -Name "$ServiceName" 
+
+            # make sure the service is running
+            if ( $Sc.Status -eq (Get-Variable -Name SERVICE_RUNNING).Value ){
+                
+                # stop the service
+                $Sc.Stop();
+   
+                # Wait for the service to have stopped
+                 do{
+                    # Refresh the Service Controller
+                    $Sc.Refresh();
+                    # Wait for 250 ms
+                    Start-Sleep -Milliseconds 250
+                    # Write debug info
+                    Write-Debug "Service Status: $($Sc.Status)"
+                
+                } while ( $sc.Status -ne (Get-Variable -Name SERVICE_STOPPED).Value )
+
+                #start the service
+                $Sc.Start(); 
+
+                               
+                # Wait for the service to have the status 'Running'
+                do{
+                    # Refresh the Service Controller
+                    $Sc.Refresh();
+                    # Wait for 250 ms
+                    Start-Sleep -Milliseconds 250
+                    # Write debug info
+                    Write-Debug "Service Status: $($Sc.Status)"
+                
+                } while ( $sc.Status -ne (Get-Variable -Name SERVICE_RUNNING).Value )
+
+                # Dispose the Service Controller
+                $Sc.Dispose();
+
+                # Set the reference to NULL
+                $Sc = $null
+            }
+            else {
+                
+                Write-Host "The apache service is not running"
+            
+            }
+            
+        
+        }
+        else
+        {
+            Throw "Apache Service Not available"
+        }
+
+    
+    }
+
+}
+
+Function Test-ApacheVhostsFile {    
+     [CmdLetBinding()]
+    param(
+        [Parameter(Mandatory = $true )]
+        [Alias("ApacheDirectory")]
+        [String] $Path
+    )
+    Begin {    
+        # Get the vhosts subdirectory from the constant
+        [String] $vhostsFile = ( Get-Variable -Name VHOSTSFILE -Scope Script ).Value        
+        Write-Output ( Test-Path -Path "$($Path)\$($vhostsFile)")
+    }
+}
+
+Function Test-ApacheDirectory{
+    [CmdLetBinding()]
+    param(
+        [Parameter(Mandatory = $true )]
+        [Alias("ApacheDirectory")]
+        [String] $Path
+    )
+    Begin {    
+        Write-Output ( Test-Path -Path $Path)    
+    }
+}
+
+
 Function Get-ApacheVirtualHost{
 <#
 
@@ -1097,4 +1069,5 @@ Function Remove-ApacheVirtualHost{
 #endregion
 
 # Export the functions
-Export-ModuleMember -Function Get-ApacheVirtualHost, New-ApacheVirtualHost, Remove-ApacheVirtualHost,Get-WindowsHost, New-WindowsHost, Remove-WindowsHost, Test-ApacheDirectory, Test-ApacheVhostsFile, Test-Elevated, Test-ApacheService, Restart-ApacheService
+#Export-ModuleMember -Function Get-ApacheVirtualHost, New-ApacheVirtualHost, Remove-ApacheVirtualHost,Get-WindowsHost, New-WindowsHost, Remove-WindowsHost, Test-ApacheDirectory, Test-ApacheVhostsFile, Test-Elevated, Test-ApacheService, Restart-ApacheService
+Export-ModuleMember -Function * 

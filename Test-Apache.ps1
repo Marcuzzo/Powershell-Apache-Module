@@ -91,6 +91,24 @@ try {
     # check if the hosts file entry was removed
     Assert-Condition -Message "Windows host removal`t`t`t" -Condition ( ( Get-WindowsHost | Where-Object { (( $_.HostName -eq $sHostName ) -and ( $_.IPAddress -eq $sIPAddress ))} ) -eq $null )
 
+    Assert-Condition -Message "Testing Apache Service`t`t" -Condition ( Test-ApacheService )
+
+    if ( Test-ApacheService ) {
+        
+        If ( (Get-Service -Name "Apache2.4").Status -ne 'Running') {
+        
+            Write-Host "Starting the Apache Service"
+            Start-Service -Name "Apache2.4" -Confirm:$false            
+        
+        }
+    
+        Restart-ApacheService
+
+        Assert-Condition -Message "Testing Apache Service Restart`t" -Condition ( (Get-Service -Name "Apache2.4").Status -eq 'Running')
+
+    }
+    
+    
     Write-Host "`n  End of testing`n`n"
 
 }
