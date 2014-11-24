@@ -25,7 +25,7 @@
 #region Constants 
 
 # Declare a constant for the windows hosts file path
-Set-Variable -Scope Script -Name HOSTFILE -Value 'C:\WINDOWS\system32\drivers\etc\hosts' -Option Constant
+Set-Variable -Scope Script -Name HOSTFILE -Value "$env:windir\system32\drivers\etc\hosts" -Option Constant
 
 # declare a constant for the localhost IP address
 Set-Variable -Scope Script -Name LOCALHOST -Value '127.0.0.1'
@@ -861,6 +861,7 @@ Function New-ApacheVirtualHost{
                 else{
                     # create the directory for the DocumentRoot
                     New-Item -Path $DocumentRoot -ItemType Directory -Force -Confirm:$false | Out-Null
+                    '<h1>It Works</h1>' | Out-File "$($DocumentRoot)\index.html" -Confirm:$false 
                 }
             }
             else
