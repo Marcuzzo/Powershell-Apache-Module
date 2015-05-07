@@ -17,7 +17,7 @@
 
 # The path to Apache
 # SET THIS TO THE CORRECT PATH ON YOUR MACHINE
-[String] $ApacheDir = 'C:\xampp\apache'
+[String] $ApacheDir = 'C:\Utilities\xampp\apache'
 
 #region Test Variables
 
