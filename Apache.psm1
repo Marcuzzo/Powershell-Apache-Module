@@ -519,7 +519,10 @@ Function Get-ApacheVirtualHost{
     param(
         
         [Parameter( Position = 0,Mandatory = $true,ValueFromPipeline=$true )]
-        [string] $ApacheDirectory
+        [string] $ApacheDirectory, 
+
+        [Parameter(Mandatory = $False)]
+        [string] $Name = $null
     
     )
     
@@ -689,10 +692,29 @@ Function Get-ApacheVirtualHost{
     } # End Process
 
     End {    
-    
-        # Write the output to the pipe or output...
-        Write-Output -InputObject $AllVirtualHosts
 
+        if ( $Name -ne '' )
+        {
+            #[String] $ScriptDir = Split-Path -Parent -Path "$($MyInvocation.MyCommand.Path)"
+            Write-Verbose "Name: $Name Path: $($MyInvocation.MyCommand.Path)"
+
+            $Invocation = (Get-Variable MyInvocation -Scope 1).Value;
+            if($Invocation.PSScriptRoot)
+            {
+                Write-Verbose $Invocation.PSScriptRoot;
+            }
+
+
+            Write-Output -InputObject $AllVirtualHosts | Where-Object { $_.ServerName -eq $Name  }
+        
+        }
+        else{
+            # Write the output to the pipe or output...
+            Write-Output -InputObject $AllVirtualHosts
+
+        }
+    
+        
     } # End Of End
 
 }
