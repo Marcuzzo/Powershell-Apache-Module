@@ -8,12 +8,14 @@ This Module consists of a set of functions to get and set virtual hosts in the a
 I've added Test-Apache.ps1 to the repository to run a few tests. 
 
 ### Installation
-Create a directory `tools` ( or whatever you like ) in the same directory as the apache directory and copy the files there.
 
- + XamppDirectory
-   + apache
-   + tools  
-   + etc...
+Using Git:
+
+	git clone git@github.com:Marcuzzo/Powershell-Apache-Module.git
+	cp Apache\ powershell\ Environment.lnk 'C:/xampp'
+	mkdir 'C:/xampp/tools'
+	cp -r tools/* 'C:/xampp/tools'
+This is only valid if you've installed XAMPP under C:\Xampp, change where needed
 
 ### Requirements
 Because some of the functions will read from and write to a file in the system32 directory you need to be running it with elevated permissions. 
@@ -43,6 +45,7 @@ I've only tested this with apache that comes with XAMPP but I'm not expecting an
 
 ### License
 This module and it's additional files are distributed under the GNU General Public License v3.
+
 
 ### Contribute
 If you want to contribute to this Powershell module or if you have any ideas to improve it please fork it and make send me a pull request.
