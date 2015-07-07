@@ -751,6 +751,7 @@ Function Get-ApacheVirtualHost{
         }
         
         elseif ($PSCmdlet.ParameterSetName -eq 'ByFilter') {
+            Write-Verbose "Filter $Filter"
             Write-Output -InputObject $AllVirtualHosts | Where $Filter
         }
         else
@@ -904,14 +905,21 @@ Function New-ApacheVirtualHost{
 
         # Check if the virtual host already exists
         # TODO: FIX THIS SHIT
-        $TestVirtualHost = Get-ApacheVirtualHost -Filter { ( $_.ServerName -eq "$Name" ) -and ( $_.DocumentRoot -eq "$DocumentRoot" ) } 
+        #$TestVirtualHost = Get-ApacheVirtualHost -Filter { ( $_.ServerName -eq "$Name" ) -and ( $_.DocumentRoot -eq "$DocumentRoot" ) } -Verbose
+        $TestVirtualHost = Get-ApacheVirtualHost -Name $Name
 
+       
         # Throw an error if found
         if ( $TestVirtualHost ) {
             [String] $ErrorMessage = "The Virtual Host $Name already exists!"
-            Write-verbose $ErrorMessage
+            Write-Host $ErrorMessage
             Throw { "Virtual Host already exists" }
         }
+        else{
+        Write-Host "not found...?"
+            $TestVirtualHost | gm
+        }
+
 
         # Check if documentroot exists
         if ( ! ( Test-Path -Path "$DocumentRoot" ) ) {

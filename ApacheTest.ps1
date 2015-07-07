@@ -26,6 +26,8 @@ else{
 
 
 
+
+
 #region Function(s)
 <# 
     Simple 'unit testing' -ish function for quick testing
@@ -47,7 +49,7 @@ Function Assert-Condition{
 #endregion
 
 #region Actual testing
-#try {
+try {
   
     # Intro
     Write-Host "`n`tRunning Tests on the Powershell Apache Module `n"
@@ -61,26 +63,22 @@ Function Assert-Condition{
     # Check if the Apache httpd-vhosts.conf file is found
     Assert-Condition -Message "Apache Vhost file`t`t`t" -Condition ( Test-ApacheVhostsFile ) 
 
-    Get-ApacheVirtualHost #-Name marcuzzo.local -verbose
+    #Get-ApacheVirtualHost #-Name marcuzzo.local -verbose
 
     # Create a new Apache Virtual host file with the associated windows hosts entry
-    [PSObject] $TestHost = New-ApacheVirtualHost -ServerName $sHostName -DocumentRoot $DocumentRoot -Force -AddToHosts
+    [PSObject] $TestHost = New-ApacheVirtualHost -ServerName $sHostName -DocumentRoot $DocumentRoot -Force -AddToHosts 
 
     
-    Get-ApacheVirtualHost #-Name marcuzzo.local -verbose
-
-    # check if the Virtual host was removed
-    #Assert-Condition -Message "Virtual host removal`t`t`t" -Condition ( ( Get-ApacheVirtualHost -Filter { (( $_.ServerName -eq $sHostName ) -and ( $_.IPAddress -eq $sIPAddress ))} ) -eq $null )
-
+    #Get-ApacheVirtualHost #-Name marcuzzo.local -verbose
 
     Write-Host "`n  End of testing`n`n"
 
-#}
-#catch {
-#    Write-Host $_.Exception.Message -ForegroundColor Red 
-#}
-#finally {
-#    # Remove the apache module to reset any changes in the module 
-    Remove-Module Apache
-#}
-##endregion
+}
+catch {
+    Write-Host $_.Exception.Message -ForegroundColor Red 
+}
+finally {
+    # Remove the apache module to reset any changes in the module 
+   Remove-Module Apache
+}
+#endregion
