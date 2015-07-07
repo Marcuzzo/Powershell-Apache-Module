@@ -1,26 +1,22 @@
 ﻿<#
-    This file is part of Powerhell Apache Module.
+    
+    Apache Module
 
-    Powerhell Apache Module is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    Powerhell Apache Module is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 #>
 
-<# 
-   Filename: Apache.psm1
-   Description: Apache Virtual hosts Module
-   Author: Marco Micozzi ( Marcuzzo )
-   Date: 19/11/2014
-#>
+#region Variables
+[string] $Script:ApacheDirectory = $null
+#endregion Variables
+
+#region INIT
+# Create a directoryinfo object for the ScriptRoot
+[System.IO.DirectoryInfo] $t = New-Object System.IO.DirectoryInfo -ArgumentList @(,$PSScriptRoot)
+
+
+If ( Test-Path "$($t.Parent.FullName)\apache" )  {    
+    $Script:ApacheDirectory = "$($t.Parent.FullName)\apache"
+}
+#endregion INIT
 
 #region Constants 
 
@@ -34,7 +30,7 @@ Set-Variable -Scope Script -Name LOCALHOST -Value '127.0.0.1'
 Set-Variable -Scope Script -Name VHOSTSFILE -Value 'conf\extra\httpd-vhosts.conf' -Option Constant
 
 # Current Script version Constant 
-Set-Variable -Scope Script -Name MODULE_VERSION -Value '0.2' -Option Constant
+Set-Variable -Scope Script -Name MODULE_VERSION -Value '0.3' -Option Constant
 
 # The name of the apache service
 Set-Variable -Scope Script -Name APACHE_SERVICE -Value 'Apache2.4' -Option Constant
@@ -72,9 +68,63 @@ Function Test-Elevated{
     }
 }
 
+
+
+Function Test-ApacheDirectory{
+[CmdLetBinding()]
+param()
+
+
+    Write-Verbose "Checking $Script:ApacheDirectory"
+    If ( $Script:ApacheDirectory -eq $null ) {
+        Write-Verbose "$Script:ApacheDirectory is not defined"
+        return $false
+    }
+
+    if ( -not ( Test-Path -Path "$Script:ApacheDirectory" ) ) {
+        Write-Verbose "The path '$Script:ApacheDirectory' doesn't exist"
+        return $false    
+    }
+    Else{
+        Write-Verbose "Apache directory found in: '$Script:ApacheDirectory'"
+        return $true
+    }
+
+}
+
+
+<# 
+     Checks if the apache service is available/installed
+
+#>
+Function Test-ApacheService{
+    Begin{    
+
+       [String] $ServiceName = (Get-Variable -Name APACHE_SERVICE).Value
+
+        return [bool] (Get-Service "$ServiceName" -ErrorAction SilentlyContinue)  
+    }
+}
+
+
+
+Function Test-ApacheVhostsFile {    
+     [CmdLetBinding()]
+    param(
+    )
+    Begin {    
+        # Get the vhosts subdirectory from the constant
+        [String] $vhostsFile = ( Get-Variable -Name VHOSTSFILE -Scope Script ).Value        
+        Write-Output ( Test-Path -Path "$($Script:ApacheDirectory)\$($vhostsFile)")
+    }
+}
+
+
 #endregion
 
+
 #region Windows Host 
+
 
 Function Get-WindowsHost{
     <#
@@ -85,9 +135,18 @@ Function Get-WindowsHost{
     .DESCRIPTION
      This function will return all hosts that are defined in the local hosts file,
 #>
-    # TODO: Add params for filtering
-    [CmdletBinding()]
-    param()
+    
+    [CmdletBinding(DefaultParameterSetName = "none")]
+    param(
+        
+        [Parameter( Position = 0, Mandatory = $False, ParameterSetName = "ByName" )]
+        [string] $Name = $null,
+
+        [Parameter( Position = 0, Mandatory = $false, ParameterSetName = "ByFilter" )]
+        [ScriptBlock] $Filter = {}
+
+    
+    )
 
 
     Begin {
@@ -140,23 +199,40 @@ Function Get-WindowsHost{
                         # Add the Object to the AllHosts Object
                         $AllHosts += $CurrentHost
 
-                    }
-                    
-                }
-                     
-            }
-               
-        }
-    
+                    }   
+                                     
+                }   
+                                  
+            }   
+                        
+        }   
+         
     }
-    End {
-        
-        # Write the output
-        Write-Output -InputObject $AllHosts
-    
+
+    End {    
+
+        if ( $PSCmdlet.ParameterSetName -eq 'ByName') {   
+
+            Write-Output -InputObject $AllHosts | Where { $_.HostName -eq $Name }
+
+        }        
+        elseif ($PSCmdlet.ParameterSetName -eq 'ByFilter') {
+
+            Write-Output -InputObject $AllHosts | Where $Filter
+
+        }
+        else
+        {
+
+            Write-Output -InputObject $AllHosts        
+
+        }
+
     }
 
 }
+
+
 
 Function New-WindowsHost{
 <#
@@ -183,7 +259,7 @@ Function New-WindowsHost{
       
 
 #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = "none")]
     param(
 
         [Parameter( Position = 0, Mandatory = $true,ParameterSetName = "InputObject", ValueFromPipeline=$true )]
@@ -375,23 +451,11 @@ Function Remove-WindowsHost{
 
 }
 
-#endregion
+#endregion Windows Host
+
+
 
 #region Apache Virtual Host
-
-
-<# 
-     Checks if the apache service is available/installed
-
-#>
-Function Test-ApacheService{
-    Begin{    
-
-       [String] $ServiceName = (Get-Variable -Name APACHE_SERVICE).Value
-
-        return [bool] (Get-Service "$ServiceName" -ErrorAction SilentlyContinue)  
-    }
-}
 
 
 Function Restart-ApacheService{
@@ -463,33 +527,6 @@ Function Restart-ApacheService{
 
 }
 
-Function Test-ApacheVhostsFile {    
-     [CmdLetBinding()]
-    param(
-        [Parameter(Mandatory = $true )]
-        [Alias("ApacheDirectory")]
-        [String] $Path
-    )
-    Begin {    
-        # Get the vhosts subdirectory from the constant
-        [String] $vhostsFile = ( Get-Variable -Name VHOSTSFILE -Scope Script ).Value        
-        Write-Output ( Test-Path -Path "$($Path)\$($vhostsFile)")
-    }
-}
-
-Function Test-ApacheDirectory{
-    [CmdLetBinding()]
-    param(
-        [Parameter(Mandatory = $true )]
-        [Alias("ApacheDirectory")]
-        [String] $Path
-    )
-    Begin {    
-        Write-Output ( Test-Path -Path $Path)    
-    }
-}
-
-
 Function Get-ApacheVirtualHost{
 <#
 
@@ -505,29 +542,35 @@ Function Get-ApacheVirtualHost{
     This parameter is mandatory because the function doesn't have any knowlegde of
     the location of the apache install directory
 
-    .PARAMETER ApacheDirectory
-    The path to the apache installation directory.
-    For a XAMPP installation this will usually be 'C:\Xampp\apache'    
+    .PARAMETER 
           
     .EXAMPLE
-     Get-ApacheVirtualHosts -ApacheDirectory 'C:\Xampp\apache'
+     Get-ApacheVirtualHosts 
      This command will print all the virtual hosts to the console    
 
      .OUTPUTS
 #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = "none")]
     param(
-        
-        [Parameter( Position = 0,Mandatory = $true,ValueFromPipeline=$true )]
-        [string] $ApacheDirectory, 
 
-        [Parameter(Mandatory = $False)]
-        [string] $Name = $null
-    
+        [Parameter( Position = 0, Mandatory = $False, ParameterSetName = "ByName" )]
+        [string] $Name = $null,
+
+        [Parameter( Position = 0, Mandatory = $false, ParameterSetName = "ByFilter" )]
+        [ScriptBlock] $Filter = {}
+
     )
     
     begin {
         
+        Write-Debug "Beginnning $Script:ApacheDirectory "
+       
+        If ( -not ( $Script:ApacheDirectory )) {
+            Write-Debug "Apache directory Not found"         
+            throw "Apache Directory not found" 
+        }
+
+
         # Declare a variable for each 'current' virtual host
         [PSObject] $VirtualHost = $null    
 
@@ -553,15 +596,15 @@ Function Get-ApacheVirtualHost{
 
     Process {
 
-        Write-Debug "ApacheDirectory: $ApacheDirectory" 
+        Write-Debug "ApacheDirectory: $Script:ApacheDirectory" 
         
         # Check if the apache directory exits and throw an error if it doesn't
-        if ( ! ( Test-Path -Path "$ApacheDirectory" ) ) {        
-            throw "$ApacheDirectory is not found"        
+        if ( ! ( Test-Path -Path "$Script:ApacheDirectory" ) ) {        
+            throw "$Script:ApacheDirectory is not found"        
         }
         
         # Store the vhosts file's full path in a variable
-        [String] $ConfFile = "$($ApacheDirectory)\$($vhostsFile)";
+        [String] $ConfFile = "$($Script:ApacheDirectory)\$($vhostsFile)";
         
         # Check if the vhosts file exits and throw an error if it doesn't
         if ( ! ( Test-Path -Path "$ConfFile" ) ) {        
@@ -602,7 +645,7 @@ Function Get-ApacheVirtualHost{
                         $VirtualHost | Add-Member @Member -Name "IPAddress" -Value $localhost
 
                         # Added apachedirectory so it can be reused in a pipeline
-                        $VirtualHost | Add-Member @Member -Name "ApacheDirectory" -Value $ApacheDirectory
+                        $VirtualHost | Add-Member @Member -Name "ApacheDirectory" -Value $Script:ApacheDirectory
 
                         # Add the custom log property, this way the property is there even when the custom log is not defined
                         # I added this to keep the object consistent
@@ -623,11 +666,7 @@ Function Get-ApacheVirtualHost{
                         # Add the property
                         $VirtualHost | Add-Member @Member -Name "ServerName" -Value $currentLine.Substring("ServerName".Length).Trim();
 
-                        if ( Get-WindowsHost | Where-Object { $_.HostName -eq $VirtualHost.ServerName } ) {
-                            $IsHosted = $true
-                        }else{
-                            $IsHosted = $false
-                        }
+                        $IsHosted = ( ( Get-WindowsHost -Name $VirtualHost.ServerName ) -ne $null )
 
                         $VirtualHost | Add-Member @Member -Name "IsHosted" -Value $IsHosted
 
@@ -693,12 +732,13 @@ Function Get-ApacheVirtualHost{
 
     End {    
 
-        if ( $Name -ne '' )
-        {
+        if ( $PSCmdlet.ParameterSetName -eq 'ByName') {   
+
             #[String] $ScriptDir = Split-Path -Parent -Path "$($MyInvocation.MyCommand.Path)"
             Write-Verbose "Name: $Name Path: $($MyInvocation.MyCommand.Path)"
 
             $Invocation = (Get-Variable MyInvocation -Scope 1).Value;
+
             if($Invocation.PSScriptRoot)
             {
                 Write-Verbose $Invocation.PSScriptRoot;
@@ -706,18 +746,31 @@ Function Get-ApacheVirtualHost{
 
 
             Write-Output -InputObject $AllVirtualHosts | Where-Object { $_.ServerName -eq $Name  }
-        
-        }
-        else{
-            # Write the output to the pipe or output...
-            Write-Output -InputObject $AllVirtualHosts
+
 
         }
+        
+        elseif ($PSCmdlet.ParameterSetName -eq 'ByFilter') {
+            Write-Output -InputObject $AllVirtualHosts | Where $Filter
+        }
+        else
+        {  
+            # Write the output to the pipe or output...
+            Write-Output -InputObject $AllVirtualHosts
+        
+        }
+
+
+        
+         
+
+        
     
         
     } # End Of End
 
 }
+
 
 Function New-ApacheVirtualHost{
 <#
@@ -727,10 +780,6 @@ Function New-ApacheVirtualHost{
 
     .DESCRIPTION
      Add a new virtual host to the apache vhosts.conf file
-
-
-    .PARAMETER ApacheDirectory
-    The path to the apache installation directory
 
     .PARAMETER ServerName
     The name of the server that needs to be added
@@ -771,16 +820,13 @@ Function New-ApacheVirtualHost{
     
 
 #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = "none")]
     param(
 
         [Parameter( Position = 0, Mandatory = $true,ParameterSetName = "InputObject", ValueFromPipeline=$true  )]
         [ValidateNotNullOrEmpty()]
         [PSObject] $InputObject,
         
-        [Parameter( Position = 0,Mandatory = $true, ParameterSetName = "ByName")]
-        [string] $ApacheDirectory,
-
         [Parameter(Position = 1,Mandatory = $true, ParameterSetName = "ByName") ]
         [Alias("ServerName")]
         [string] $Name,
@@ -854,13 +900,11 @@ Function New-ApacheVirtualHost{
         
         }
       
-        Write-Verbose  "ApacheDirectory: $ApacheDirectory"
+        Write-Verbose  "ApacheDirectory: $Script:ApacheDirectory"
 
         # Check if the virtual host already exists
         # TODO: FIX THIS SHIT
-        $TestVirtualHost = Get-ApacheVirtualHost -ApacheDirectory $ApacheDirectory | Where-Object { 
-            ( $_.ServerName -eq "$Name" ) -and ( $_.DocumentRoot -eq "$DocumentRoot" )
-        } 
+        $TestVirtualHost = Get-ApacheVirtualHost -Filter { ( $_.ServerName -eq "$Name" ) -and ( $_.DocumentRoot -eq "$DocumentRoot" ) } 
 
         # Throw an error if found
         if ( $TestVirtualHost ) {
@@ -897,7 +941,7 @@ Function New-ApacheVirtualHost{
         }
 
 
-        [String] $VirtualHostText = "<VirtualHost *:80>`n"
+        [String] $VirtualHostText = "`n<VirtualHost *:80>`n"
         $VirtualHostText += "`tServerAdmin $ServerAdmin `n"
         $VirtualHostText += "`tDocumentRoot `"$DocumentRoot`"`n"
         $VirtualHostText += "`tServerName $Name`n"
@@ -921,21 +965,22 @@ Function New-ApacheVirtualHost{
         $VirtualHostText += "`t`tAllow $Allow`n"
         $VirtualHostText += "`t`tRequire $Require`n"
         $VirtualHostText += "`t</Directory>`n"
-        $VirtualHostText += '</VirtualHost>'
+        $VirtualHostText += '</VirtualHost>`n'
            
         if ( $WhatIf.IsPresent ){
             Write-Host "Creating $Name with the following text: `n $VirtualHostText"
         }
         else
         {
-            Add-Content -Path "$($ApacheDirectory)\conf\extra\httpd-vhosts.conf" -Value $VirtualHostText
+                
+            Add-Content -Path "$Script:ApacheDirectory\conf\extra\httpd-vhosts.conf" -Value $VirtualHostText
         }
 
         # Check if the
         if ( $AddToHosts.IsPresent){
             Write-Verbose "Adding host with $Name to the Windows host file"
 
-            if ( ! ( Get-WindowsHost | Where-Object { ( ( $_.HostName -eq $Name ) -and ( $_.IPAddress -eq $IPAddress ) ) } ) ){
+            if ( ! ( Get-WindowsHost -Filter{ ( ( $_.HostName -eq $Name ) -and ( $_.IPAddress -eq $IPAddress ) ) } ) ) {
                 New-WindowsHost -Name $Name #| Out-Null
             }
             else
@@ -948,23 +993,20 @@ Function New-ApacheVirtualHost{
 
     End {
         if ( ! ( $WhatIf.IsPresent ) ) {
-            $NewVirtualHost = Get-ApacheVirtualHost -ApacheDirectory $ApacheDirectory | Where-Object { 
-                ( $_.ServerName -eq "$Name" ) -or ( $_.DocumentRoot -eq "$DocumentRoot" )
-            } 
+            $NewVirtualHost = Get-ApacheVirtualHost -Filter { ( $_.ServerName -eq "$Name" ) -or ( $_.DocumentRoot -eq "$DocumentRoot" )} 
             Write-Output -InputObject $NewVirtualHost
         }
     }    
 }
+
+
 
 # TODO: Finish this!
 Function Remove-ApacheVirtualHost{
 
  [CmdletBinding( SupportsShouldProcess=$true, ConfirmImpact="High")]
     param(
-
-        [Parameter( Position = 0,Mandatory = $true, ValueFromPipeline=$true, ParameterSetName = "ByName")]
-        [string] $ApacheDirectory,
-
+    
         [Parameter( Position = 0, Mandatory = $true,ParameterSetName = "InputObject", ValueFromPipeline=$true,ValueFromPipeLineByPropertyName=$true  )]
         [ValidateNotNullOrEmpty()]
         [PSObject] $InputObject,
@@ -1005,7 +1047,7 @@ Function Remove-ApacheVirtualHost{
             Write-Verbose "Getting info from parameters"
 
             # try to get the object of the current requested virtual host
-            $tmpVirtualHost = Get-ApacheVirtualHost -ApacheDirectory $ApacheDirectory | Where-Object { ( ( $_.ServerName -eq $Name ) -and ( $_.DocumentRoot -eq $DocumentRoot ) ) }
+            $tmpVirtualHost = Get-ApacheVirtualHost | Where-Object { ( ( $_.ServerName -eq $Name ) -and ( $_.DocumentRoot -eq $DocumentRoot ) ) }
 
             # check if the object is fetched and assign it to the VirtualHostToRemove object
             if ( $tmpVirtualHost ) {                
@@ -1038,7 +1080,7 @@ Function Remove-ApacheVirtualHost{
             [String] $original_vhostsfile = "$($VirtualHostToRemove.ApacheDirectory)\$($vhostfile)"
             [String] $backup_vhostsfile = "$($backupDir)\httpd-vhosts-$($TimeStamp).conf"
 
-            [PSObject] $VirtualHosts = Get-ApacheVirtualHost -ApacheDirectory $VirtualHostToRemove.ApacheDirectory
+            [PSObject] $VirtualHosts = Get-ApacheVirtualHost 
 
             # Move the file to the backup
             Move-Item -Path $original_vhostsfile -Destination $backup_vhostsfile -Force -Confirm:$false
@@ -1089,8 +1131,7 @@ Function Remove-ApacheVirtualHost{
     }    
 }
 
-#endregion
+#endregion Apache Virtual Host
 
 # Export the functions
-#Export-ModuleMember -Function Get-ApacheVirtualHost, New-ApacheVirtualHost, Remove-ApacheVirtualHost,Get-WindowsHost, New-WindowsHost, Remove-WindowsHost, Test-ApacheDirectory, Test-ApacheVhostsFile, Test-Elevated, Test-ApacheService, Restart-ApacheService
-Export-ModuleMember -Function * 
+Export-ModuleMember -Function * #-Variable $Global:ApacheDirectory 

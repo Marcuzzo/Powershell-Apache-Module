@@ -6,6 +6,14 @@ This Module consists of a set of functions to get and set virtual hosts in the a
 
 I've added Test-Apache.ps1 to the repository to run a few tests. 
 
+### Installation
+Create a directory `tools` ( or whatever you like ) in the same directory as the apache directory and copy the files there.
+
+ + XamppDirectory
+   + apache
+   + tools  
+   + etc...
+
 ### Requirements
 Because some of the functions will read from and write to a file in the system32 directory you need to be running it with elevated permissions. 
 
@@ -42,29 +50,25 @@ If you want to contribute to this Powershell module or if you have any ideas to 
 ### Get-ApacheVirtualHost
 The Get-ApacheVirtualHost function will return all virtual hosts that have been configured in the file httpd-vhosts.conf which is located in the 'conf/extra' subdirectory of the apache installation directory.  
 
-The Get-ApacheVirtualHost function has 1 mandatory parameter which is `ApacheDirectory` :
+The Get-ApacheVirtualHost function has no mandatory parameters
 
-    Get-ApacheVirtualHost -ApacheDirectory "C:\xampp\apache"
+    Get-ApacheVirtualHost 
 
-The `ApacheDirectory` parameter can also be piped to the function
 
-	"C:\xampp\apache" | Get-ApacheVirtualHost
 
 
 #### Filtering
-At the moment I haven't added a -Filter parameter yet but I will try to add this when I have more time.  
-You can use the `Where-Object` CmdLet to filter the output.
   
 to get all the virtual hosts that start with 'test' you can run the following:
 
 ```PowerShell
-	Get-ApacheVirtualHost -ApacheDirectory "C:\xampp\apache" | Where-Object { $_.ServerName -like 'test*' }
+	Get-ApacheVirtualHost -Filter { $_.ServerName -like 'test*' }
  ```
  
 #### Output
 The Get-ApacheVirtualHost function will return an object of Type PSCustomObject.
 
-	PS C:\CmdLets\Apache-Vhost> Get-ApacheVirtualHost -ApacheDirectory C:\xampp\apache | Get-Member
+	PS C:\CmdLets\Apache-Vhost> Get-ApacheVirtualHost | Get-Member
 
        TypeName: System.Management.Automation.PSCustomObject
 
@@ -83,7 +87,7 @@ The Get-ApacheVirtualHost function will return an object of Type PSCustomObject.
 
 The Directory Object:
 
-	PS C:\CmdLets\Apache-Vhost> (Get-ApacheVirtualHost -ApacheDirectory C:\xampp\apache).Directory | Get-Member
+	PS C:\CmdLets\Apache-Vhost> (Get-ApacheVirtualHost).Directory | Get-Member
 
 	   TypeName: System.Management.Automation.PSCustomObject
 
@@ -109,15 +113,14 @@ The New-ApacheVirtualHost will add a new virtual host to the httpd-vhosts.conf f
 
 	New-ApacheVirtualHost [-InputObject] <PSObject> [-WhatIf] [<CommonParameters>]
 
-	New-ApacheVirtualHost [-ApacheDirectory] <String> [-ServerName] <String> [-ServerAdmin <String>]
+	New-ApacheVirtualHost [-ServerName] <String> [-ServerAdmin <String>]
 	                      [-DocumentRoot] <String> [-ServerAlias <String>] [-ErrorLog <String>]
 	                      [-CustomLog <String>] [-Directory <String>] [-AllowOverride <String>] [-Order <String>]
 	                      [-Allow <String>] [-Require <String>] [-Force] [-WhatIf] [<CommonParameters>]
 
 #### Example
 
-	New-ApacheVirtualHost -ApacheDirectory "C:\Xampp\apache" `
-	                      -ServerName "SomeHost.local" `
+	New-ApacheVirtualHost -ServerName "SomeHost.local" `
 	                      -DocumentRoot "C:\sites\SomeHost.local"
 
 
@@ -149,7 +152,7 @@ There are 2 ways to remove a Virtual host:
 
 #### Syntax
 
-    Remove-ApacheVirtualHost [-ApacheDirectory] <string> [-Name] <string> [-DocumentRoot] <string> [-Force] [-WhatIf] [-Confirm]  [<CommonParameters>]
+    Remove-ApacheVirtualHost [-Name] <string> [-DocumentRoot] <string> [-Force] [-WhatIf] [-Confirm]  [<CommonParameters>]
 
     Remove-ApacheVirtualHost [-InputObject] <psobject> [-Force] [-WhatIf] [-Confirm]  [<CommonParameters>]
 
@@ -159,12 +162,12 @@ There are 2 ways to remove a Virtual host:
 
 Parameters:
 
-	Remove-ApacheVirtualHost -ApacheDirectory "C:\Xampp\apache" -Name "SomeHost.local" -DocumentRoot "C:\sites\SomeHost.local" -Confirm:$false
+	Remove-ApacheVirtualHost -Name "SomeHost.local" -DocumentRoot "C:\sites\SomeHost.local" -Confirm:$false
 
 
 Pipeline:
 
-	$ApacheDir | Get-ApacheVirtualHost | Where-Object { $_.ServerName -eq "SomeHost.local"  } | Remove-ApacheVirtualHost -Confirm:$false
+	Get-ApacheVirtualHost -Filter{ $_.ServerName -eq "SomeHost.local"  } | Remove-ApacheVirtualHost -Confirm:$false
 
 > See the Test-Apache.ps1 script for a working example
 
@@ -177,7 +180,7 @@ To get all WindowsHosts run:
 
 To get a specific host you can use the Where-Object CmdLet
 	
-	Get-WindowsHost | Where-Object { $_.HostName -eq 'SomeHost.local' }
+	Get-WindowsHost -Filter { $_.HostName -eq 'SomeHost.local' }
 
 ### Output
 
@@ -213,4 +216,4 @@ You can remove a WindowsHost by using the -(Host)Name and the optional IPAddress
 
 Or you can get the Host object using the Get-WindowsHost function and pipe it to the Remove-WindowsHost Function
 	
-	Get-WindowsHost | Where-Object { $_.HostName -eq 'SomeHost.local' } | Remove-WindowsHost 
+	Get-WindowsHost -Filter { $_.HostName -eq 'SomeHost.local' } | Remove-WindowsHost 
