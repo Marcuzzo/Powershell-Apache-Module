@@ -1,5 +1,5 @@
 ﻿<#
- This file is part of the Apache Powershell Module.
+    This file is part of the Apache Powershell Module.
 
     the Apache Powershell Module is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,6 +14,13 @@
     You should have received a copy of the GNU General Public License
     along with the Apache Powershell Module.  If not, see <http://www.gnu.org/licenses/>.
 
+#>
+
+<# 
+   Filename: Apache.psm1
+   Description: Apache Virtual hosts Module
+   Author: Marco Micozzi ( Marcuzzo )
+   Date: 19/11/2014
 #>
 
 

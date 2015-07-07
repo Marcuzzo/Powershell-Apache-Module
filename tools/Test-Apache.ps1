@@ -16,6 +16,11 @@
 
 #>
 
+<#
+
+    Description: Basic 'unit-testing' -ish script to test the module 
+
+#>
 
 If (Test-Path "$PSScriptRoot\Apache.psm1"){
     Import-Module "$PSScriptRoot\Apache.psm1"
