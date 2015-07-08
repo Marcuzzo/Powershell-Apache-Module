@@ -15,6 +15,7 @@ Using Git:
 	cp Apache\ powershell\ Environment.lnk 'C:/xampp'
 	mkdir 'C:/xampp/tools'
 	cp -r tools/* 'C:/xampp/tools'
+    
 This is only valid if you've installed XAMPP under C:\Xampp, change where needed
 
 ### Requirements
