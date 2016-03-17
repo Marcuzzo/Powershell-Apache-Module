@@ -993,7 +993,7 @@ Function New-ApacheVirtualHost{
         $VirtualHostText += "`t`tAllow $Allow`n"
         $VirtualHostText += "`t`tRequire $Require`n"
         $VirtualHostText += "`t</Directory>`n"
-        $VirtualHostText += '</VirtualHost>`n'
+        $VirtualHostText += "</VirtualHost>`n"
            
         if ( $WhatIf.IsPresent ){
             Write-Host "Creating $Name with the following text: `n $VirtualHostText"
@@ -1006,9 +1006,11 @@ Function New-ApacheVirtualHost{
 
         # Check if the
         if ( $AddToHosts.IsPresent){
+
             Write-Verbose "Adding host with $Name to the Windows host file"
 
             if ( ! ( Get-WindowsHost -Filter{ ( ( $_.HostName -eq $Name ) -and ( $_.IPAddress -eq $IPAddress ) ) } ) ) {
+                Write-Verbose "Adding windows host $Name"
                 New-WindowsHost -Name $Name #| Out-Null
             }
             else
